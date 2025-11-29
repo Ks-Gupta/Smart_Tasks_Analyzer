@@ -3,155 +3,183 @@
 
 # 🧠 Smart Task Analyzer
 
-A smart AI-powered system that analyzes user tasks and provides structured insights, scoring, and recommendations using a backend powered by Django and a simple frontend interface.
+An intelligent task-ranking system that computes priority scores using a hybrid urgency-based, importance-weighted, effort-adjusted algorithm with dependency awareness.
+Backend powered by Django + DRF, with a lightweight HTML/JS frontend.
 
 ---
 
-## 🚀 Features
+## 📌 1. Setup Instructions
 
-* **Task Scoring System** – Automatically score tasks based on complexity, impact, and priority
-* **REST API Backend** (Django + DRF) for task submissions
-* **Frontend UI** for interacting with the system
-* **Database Storage** using SQLite
-* **Modular architecture** for easy modifications and improvements
-
----
-
-## 🏗️ Tech Stack
-
-### **Backend**
-
-* Django
-* Django REST Framework
-* SQLite3
-
-### **Frontend**
-
-* HTML, CSS, JavaScript
-
-### **Tools**
-
-* Git & GitHub
-* Python
-* REST APIs
-
----
-
-## 📁 Project Structure
-
-```
-Smart_Task_Analyzer/
-│── task-analyzer/
-│   ├── backend/
-│   │   ├── manage.py
-│   │   ├── requirements.txt
-│   │   ├── task_analyzer/
-│   │   │   ├── settings.py
-│   │   │   ├── urls.py
-│   │   │   ├── wsgi.py
-│   │   ├── tasks/
-│   │       ├── models.py
-│   │       ├── serializers.py
-│   │       ├── views.py
-│   │       ├── scoring.py
-│   ├── frontend/
-│       ├── index.html
-│       ├── script.js
-│       ├── style.css
-│── README.md
-```
-
----
-
-## ⚙️ Installation & Setup
-
-### **1️⃣ Clone the repository**
+### **Clone the repository**
 
 ```bash
 git clone https://github.com/Ks-Gupta/Smart_Tasks_Analyzer.git
 cd Smart_Tasks_Analyzer/task-analyzer/backend
 ```
 
----
-
-### **2️⃣ Create a virtual environment**
+### **Create virtual environment**
 
 ```bash
 python3 -m venv env
-source env/bin/activate   # Mac/Linux
-env\Scripts\activate      # Windows
+source env/bin/activate     # Mac/Linux
+env\Scripts\activate        # Windows
 ```
 
----
-
-### **3️⃣ Install dependencies**
+### **Install dependencies**
 
 ```bash
 pip install -r requirements.txt
 ```
 
----
-
-### **4️⃣ Run database migrations**
+### **Run migrations**
 
 ```bash
 python manage.py migrate
 ```
 
----
-
-### **5️⃣ Start the backend server**
+### **Start server**
 
 ```bash
 python manage.py runserver
 ```
 
-Backend will run at:
+Backend is now live at:
 👉 [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
 
+Open frontend:
+👉 `task-analyzer/frontend/index.html`
+
 ---
 
-### **6️⃣ Open the frontend**
+## 📌 2. Algorithm Explanation (≈ 350–450 words)
 
-Simply open:
+The Smart Task Analyzer uses a **multi-factor hybrid scoring algorithm** designed to estimate the practical priority of a task by combining urgency, importance, effort, and dependency impact. The goal is to move beyond simple to-do list prioritization and capture the *real* factors that influence productive decision-making.
+
+### **1. Urgency Calculation**
+
+Urgency is determined using the number of days remaining until the task's due date.
+
+* If no due date exists, urgency defaults to `0`.
+* If the task is overdue, urgency is set to a maximum value of `10`.
+* Otherwise:
+
+  ```
+  urgency = max(0, 10 - days_left/2)
+  ```
+
+This creates a smooth, declining urgency curve rather than a binary high/low classification.
+
+### **2. Importance Weight**
+
+Importance is a user-defined integer that usually ranges between 1–5.
+It reflects how critical the task is independent of deadline pressure.
+
+In the final score, importance contributes **40%** of the total weight, equal to urgency.
+This ensures that a high-impact task without a close deadline still ranks well.
+
+### **3. Effort Score (Quick-Win Boost)**
+
+Effort is measured in estimated hours.
+The system rewards “quick wins” using the formula:
 
 ```
-task-analyzer/frontend/index.html
+effort_score = 10 / (effort + 1)
 ```
 
-in your browser.
+The lower the effort, the higher the score contribution.
+This encourages completing small tasks early, preventing backlog buildup.
+
+### **4. Dependency Boost**
+
+Tasks depending on other tasks gain a small boost:
+
+```
+dependency_boost = 2 * number_of_dependencies
+```
+
+This helps surface “bottleneck tasks” in workflows that might block progress elsewhere.
+
+### **5. Final Score Formula**
+
+Each factor is weighted:
+
+```
+final_score =
+    (urgency * 0.4) +
+    (importance * 0.4) +
+    (effort_score * 0.1) +
+    (dependency_boost * 0.1)
+```
+
+### **6. Circular Dependency Detection**
+
+Before scoring, the algorithm runs a DFS-based cycle detector.
+Any circular dependency raises an error and prevents invalid ranking.
+
+This ensures consistency and correctness in complex project structures.
 
 ---
 
-## 📌 API Endpoints (Important)
+## 📌 3. Design Decisions (Trade-offs)
 
-| Method | Endpoint         | Description               |
-| ------ | ---------------- | ------------------------- |
-| POST   | `/tasks/submit/` | Submit a task for scoring |
-| GET    | `/tasks/`        | Get all tasks             |
-| GET    | `/tasks/<id>/`   | Get task details          |
-
----
-
-## 🎯 Future Improvements
-
-* Add user authentication
-* Add LLM-powered task description analysis
-* Improve scoring algorithm
-* Add a React/Next.js frontend
-* Deploy to cloud (Render, Railway, AWS)
+* **Chose weighted scoring instead of ML**
+  → Offers full determinism and fewer dependencies.
+* **Effort scored inversely** to highlight easy wins
+  → Simple and intuitive, though not precise for large projects.
+* **Limited dependency influence to 10%**
+  → Prevents dependency-heavy tasks from dominating the list.
+* **Used SQLite**
+  → Lightweight and ideal for local evaluation.
+* **Simple frontend**
+  → Kept focus on backend logic and scoring accuracy.
 
 ---
 
-## 🤝 Contributing
+## 📌 4. Time Breakdown
 
-Contributions are welcome!
-Feel free to open issues or submit pull requests.
+| Task                         | Time Spent |
+| ---------------------------- | ---------- |
+| Research & algorithm design  | 3 hours    |
+| Django backend setup         | 2 hours    |
+| API & scoring implementation | 3 hours    |
+| Frontend (HTML/CSS/JS)       | 2 hours    |
+| Unit tests                   | 1 hour     |
+| README + cleanup             | 1 hour     |
+
+Total ≈ **12 hours**
 
 ---
 
-## 📄 License
+## 📌 5. Bonus Challenges Attempted
 
-This project is open-source and available under the **MIT License**.
+* ✔ Implemented cycle detection using DFS
+* ✔ Added full scoring explanations for UX transparency
+* ✔ Included dependency-aware weighting
+* ❌ No ML-based predictive scoring
+* ❌ No UI visual charts (due to time constraints)
+
+---
+
+## 📌 6. Future Improvements
+
+* Add ML-based learning from past completions
+* Replace frontend with React or Next.js
+* Add Gantt-chart visualization
+* Enable multi-user login
+* Add task clustering / similarity analysis
+* Migrate to PostgreSQL for larger datasets
+
+---
+
+## 📌 7. Unit Tests (Included)
+
+At least 3 tests covering:
+
+1. **Urgency scoring**
+2. **Effort scoring**
+3. **Dependency cycle detection**
+
+Located in:
+`task-analyzer/backend/tasks/tests.py`
 
 ---
